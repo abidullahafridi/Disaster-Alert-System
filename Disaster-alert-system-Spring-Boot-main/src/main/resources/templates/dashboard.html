@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Disaster Alert System</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --success-color: #198754;
+            --info-color: #0dcaf0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color), #0a58ca);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card {
+            border: none;
+            border-radius: 10px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .disaster-card {
+            border-left: 5px solid var(--danger-color);
+            margin-bottom: 15px;
+        }
+        
+        .volunteer-card {
+            border-left: 5px solid var(--success-color);
+            margin-bottom: 15px;
+        }
+        
+        .severity-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .severity-low { background-color: var(--success-color); color: white; }
+        .severity-medium { background-color: var(--warning-color); color: black; }
+        .severity-high { background-color: var(--danger-color); color: white; }
+        .severity-critical { background-color: #8b0000; color: white; }
+        
+        .category-badge {
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+        }
+        
+        .rescue-badge { background-color: #dc3545; color: white; }
+        .medical-badge { background-color: #198754; color: white; }
+        .supply-badge { background-color: #0d6efd; color: white; }
+        .engineer-badge { background-color: #6f42c1; color: white; }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-active { background-color: var(--success-color); }
+        .status-pending { background-color: var(--warning-color); }
+        .status-completed { background-color: #6c757d; }
+        .status-busy { background-color: #fd7e14; }
+        
+        .progress-thread {
+            height: 20px;
+            border-radius: 10px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+        
+        .progress-thread .progress-bar {
+            transition: width 1s linear;
+        }
+        
+        .thread-info {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .countdown-timer {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: var(--danger-color);
+        }
+        
+        .assignment-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .assignment-item:last-child {
+            border-bottom: none;
+        }
+        
+        .simulation-live {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-broadcast"></i> Disaster Alert System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/disasters">
+                            <i class="bi bi-exclamation-triangle"></i> Disasters
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/volunteers">
+                            <i class="bi bi-people"></i> Volunteers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/simulation">
+                            <i class="bi bi-play-circle"></i> Simulation
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/reports">
+                            <i class="bi bi-file-earmark-text"></i> Reports
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-5 fw-bold">
+                        <i class="bi bi-broadcast"></i> Disaster Alert & Volunteer Response Simulator
+                        <span th:if="${simulationRunning}" class="badge bg-success simulation-live ms-2">
+                            <i class="bi bi-circle-fill"></i> SIMULATION LIVE
+                        </span>
+                    </h1>
+                    <p class="lead mb-0">Real-time disaster management simulation with multithreaded volunteer coordination</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group action-buttons">
+                        <form th:action="@{/admin/simulation/start}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-play-circle"></i> Start Simulation
+                            </button>
+                        </form>
+                        <form th:action="@{/admin/simulation/stop}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-stop-circle"></i> Stop Simulation
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Flash Messages -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${success}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <!-- REAL-TIME SIMULATION STATUS -->
+        <div th:if="${simulationRunning}" class="alert alert-info">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong><i class="bi bi-cpu"></i> Thread Status:</strong>
+                    <span th:text="${activeThreads}">0</span> active threads
+                </div>
+                <div class="col-md-4">
+                    <strong><i class="bi bi-clock"></i> Last Update:</strong>
+                    <span id="lastUpdateTime">Just now</span>
+                </div>
+                <div class="col-md-4">
+                    <strong><i class="bi bi-arrow-repeat"></i> Auto-refresh:</strong>
+                    Every 5 seconds
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Cards with REAL DATA -->
+        <div class="row mb-4">
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card stat-card border-primary">
+                    <div class="card-body text-center">
+                        <div class="stat-icon text-primary">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                        <h2 class="card-title" th:text="${stats.totalDisasters}">0</h2>
+                        <p class="card-text">Total Disasters</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card stat-card border-danger">
+                    <div class="card-body text-center">
+                        <div class="stat-icon text-danger">
+                            <i class="bi bi-fire"></i>
+                        </div>
+                        <h2 class="card-title" th:text="${stats.activeDisasters}">0</h2>
+                        <p class="card-text">Active Disasters</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card stat-card border-warning">
+                    <div class="card-body text-center">
+                        <div class="stat-icon text-warning">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                        <h2 class="card-title" th:text="${stats.pendingDisasters}">0</h2>
+                        <p class="card-text">Pending Disasters</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card stat-card border-success">
+                    <div class="card-body text-center">
+                        <div class="stat-icon text-success">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <h2 class="card-title" th:text="${stats.totalVolunteers}">0</h2>
+                        <p class="card-text">Total Volunteers</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card stat-card border-info">
+                    <div class="card-body text-center">
+                        <div class="stat-icon text-info">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <h2 class="card-title" th:text="${stats.activeThreads}">0</h2>
+                        <p class="card-text">Active Threads</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-2 col-md-4 mb-4">
+                <div class="card stat-card border-secondary">
+                    <div class="card-body text-center">
+                        <div class="stat-icon text-secondary">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <h2 class="card-title" th:text="${stats.completedAssignments}">0</h2>
+                        <p class="card-text">Completed Tasks</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content: ACTIVE SIMULATION DETAILS -->
+        <div class="row">
+            <!-- Left Column: ACTIVE DISASTERS WITH VOLUNTEER DETAILS -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-exclamation-octagon"></i> Active Disasters & Assignments
+                            <span class="badge bg-light text-danger ms-2" th:text="${activeDisasters.size()}">0</span>
+                        </h5>
+                        <span class="badge bg-warning" th:if="${activeDisasters.size() > 0}">
+                            <i class="bi bi-lightning"></i> MULTITHREADING IN PROGRESS
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${activeDisasters.empty}" class="text-center py-4">
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                            <p class="mt-3">No active disasters. All clear!</p>
+                            <p class="text-muted">Create a disaster and start simulation to see multithreading in action.</p>
+                        </div>
+                        
+                        <!-- EACH ACTIVE DISASTER WITH ITS VOLUNTEERS -->
+                        <div th:each="disaster : ${activeDisasters}">
+                            <div class="card disaster-card mb-3">
+                                <div class="card-body">
+                                    <!-- Disaster Header -->
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h5 class="card-title mb-1">
+                                                <span th:text="${disaster.type.displayName}"></span> - 
+                                                <span th:text="${disaster.location}"></span>
+                                            </h5>
+                                            <div class="d-flex gap-2 align-items-center">
+                                                <span class="severity-badge" 
+                                                      th:classappend="'severity-' + ${disaster.severity.name().toLowerCase()}"
+                                                      th:text="${disaster.severity.displayName}">
+                                                    Severity
+                                                </span>
+                                                <span class="badge bg-dark">
+                                                    ID: <span th:text="${disaster.id}"></span>
+                                                </span>
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-people"></i>
+                                                    <span th:text="${#numbers.formatInteger(disaster.estimatedCasualties, 0)}">0</span> affected
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <small class="text-muted d-block">
+                                                Started: <span th:text="${#temporals.format(disaster.createdAt, 'HH:mm:ss')}"></span>
+                                            </small>
+                                            <form th:action="@{'/admin/disaster/' + ${disaster.id} + '/complete'}" method="post">
+                                                <button type="submit" class="btn btn-success btn-sm mt-1">
+                                                    <i class="bi bi-check-circle"></i> Force Complete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Disaster Description -->
+                                    <p class="card-text text-muted small mb-3" th:text="${disaster.description}">
+                                        Description
+                                    </p>
+                                    
+                                    <!-- ASSIGNED VOLUNTEERS FOR THIS DISASTER -->
+                                    <div class="mt-3">
+                                        <h6 class="border-bottom pb-2">
+                                            <i class="bi bi-person-badge"></i> Assigned Volunteers
+                                            <span class="badge bg-info" th:text="${disasterAssignments.get(disaster.id)?.size() ?: 0}">0</span>
+                                        </h6>
+                                        
+                                        <div th:if="${disasterAssignments.get(disaster.id)?.empty}" 
+                                             class="alert alert-warning py-2">
+                                            <small><i class="bi bi-exclamation-triangle"></i> No volunteers assigned yet. Simulation will assign automatically.</small>
+                                        </div>
+                                        
+                                        <!-- List of volunteers working on this disaster -->
+                                        <div th:each="assignment : ${disasterAssignments.get(disaster.id)}"
+                                             class="assignment-item">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="status-indicator status-busy"></span>
+                                                        <strong th:text="${assignment.volunteer.name}">Volunteer</strong>
+                                                        <span class="category-badge ms-2" 
+                                                              th:classappend="${assignment.volunteer.category.name().toLowerCase() + '-badge'}"
+                                                              th:text="${assignment.volunteer.category.displayName}">
+                                                        </span>
+                                                    </div>
+                                                    <small class="text-muted" th:text="${assignment.volunteer.email}"></small>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <!-- Thread Progress Bar -->
+                                                    <div class="progress-thread">
+                                                        <div class="progress-bar" 
+                                                             role="progressbar" 
+                                                             th:attr="data-assignment-id=${assignment.id}"
+                                                             th:style="'width: ' + ${assignmentProgress.get(assignment.id)} + '%; background-color: ' + ${assignmentColor.get(assignment.id)}"
+                                                             th:text="${assignmentProgress.get(assignment.id)} + '%'">
+                                                        </div>
+                                                    </div>
+                                                    <div class="thread-info">
+                                                        <i class="bi bi-clock"></i>
+                                                        <span class="countdown-timer" 
+                                                              th:attr="data-end-time=${assignmentEndTime.get(assignment.id)}"
+                                                              th:text="'Time left: ' + ${assignmentTimeLeft.get(assignment.id)}">
+                                                            Calculating...
+                                                        </span>
+                                                        | Thread: <span th:text="${assignmentThreadId.get(assignment.id)}">N/A</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- DISASTER PROGRESS SUMMARY -->
+                                    <div class="mt-3 pt-3 border-top">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-calendar"></i>
+                                                    Reported: <span th:text="${#temporals.format(disaster.createdAt, 'dd MMM yyyy')}"></span>
+                                                </small>
+                                            </div>
+                                            <div class="col-md-6 text-end">
+                                                <small th:if="${disasterProgress.get(disaster.id)}">
+                                                    <strong>Overall Progress:</strong>
+                                                    <span class="badge" 
+                                                          th:classappend="${disasterProgress.get(disaster.id) == 100 ? 'bg-success' : 'bg-warning'}">
+                                                        <span th:text="${disasterProgress.get(disaster.id)}">0</span>%
+                                                    </span>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a href="/disasters" class="btn btn-outline-danger">
+                                <i class="bi bi-list"></i> View All Disasters
+                            </a>
+                            <a href="/admin/disaster/create" class="btn btn-danger">
+                                <i class="bi bi-plus-circle"></i> Create New Disaster
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column: VOLUNTEER STATUS & QUEUE -->
+            <div class="col-lg-6 mb-4">
+                <!-- Volunteer Status Distribution -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-check"></i> Volunteer Status Distribution
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 text-center">
+                                <div class="border rounded p-3">
+                                    <h3 class="text-success" th:text="${stats.availableVolunteers}">0</h3>
+                                    <small>Available</small>
+                                    <div class="status-indicator status-active mx-auto mt-2"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="border rounded p-3">
+                                    <h3 class="text-warning" th:text="${stats.assignedVolunteers}">0</h3>
+                                    <small>Assigned</small>
+                                    <div class="status-indicator status-pending mx-auto mt-2"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="border rounded p-3">
+                                    <h3 class="text-danger" th:text="${stats.busyVolunteers}">0</h3>
+                                    <small>Busy</small>
+                                    <div class="status-indicator status-busy mx-auto mt-2"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="border rounded p-3">
+                                    <h3 class="text-secondary" th:text="${stats.restingVolunteers}">0</h3>
+                                    <small>Resting</small>
+                                    <div class="status-indicator status-completed mx-auto mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Available Volunteers -->
+                <div class="card">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-people"></i> Available Volunteers
+                            <span class="badge bg-light text-info ms-2" th:text="${availableVolunteers.size()}">0</span>
+                        </h5>
+                        <span class="badge bg-dark">
+                            <i class="bi bi-cpu"></i> Ready for Assignment
+                        </span>
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        <div th:if="${availableVolunteers.empty}" class="text-center py-4">
+                            <i class="bi bi-person-x text-warning" style="font-size: 3rem;"></i>
+                            <p class="mt-3">No available volunteers. All are assigned!</p>
+                            <p class="text-muted">Wait for current tasks to complete or add more volunteers.</p>
+                        </div>
+                        
+                        <!-- Available Volunteers List -->
+                        <div th:each="volunteer : ${availableVolunteers}" class="card volunteer-card mb-2">
+                            <div class="card-body py-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="d-flex align-items-center">
+                                            <span class="status-indicator status-active"></span>
+                                            <h6 class="card-title mb-0 ms-2" th:text="${volunteer.name}">
+                                                Volunteer Name
+                                            </h6>
+                                            <span class="category-badge ms-2" 
+                                                  th:classappend="${volunteer.category.name().toLowerCase() + '-badge'}"
+                                                  th:text="${volunteer.category.displayName}">
+                                                Category
+                                            </span>
+                                        </div>
+                                        <div class="mt-1">
+                                            <small class="text-muted" th:text="${volunteer.email}"></small>
+                                            <span class="badge bg-info ms-2">
+                                                Level <span th:text="${volunteer.experienceLevel}">1</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-telephone"></i>
+                                            <span th:text="${volunteer.phoneNumber}">Phone</span>
+                                        </small>
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Ready
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a href="/volunteers" class="btn btn-outline-info">
+                                <i class="bi bi-list"></i> View All Volunteers
+                            </a>
+                            <a href="/admin/volunteer/create" class="btn btn-info">
+                                <i class="bi bi-person-plus"></i> Add New Volunteer
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Simulation Queue -->
+                <div class="card mt-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-hourglass-split"></i> Simulation Queue
+                            <span class="badge bg-light text-warning ms-2" th:text="${pendingDisasters.size()}">0</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${pendingDisasters.empty}" class="text-center py-3">
+                            <i class="bi bi-check-circle text-success"></i>
+                            <p class="mt-2 mb-0">No disasters in queue</p>
+                        </div>
+                        
+                        <div th:each="disaster : ${pendingDisasters}" class="mb-2">
+                            <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                <div>
+                                    <small class="text-muted">Waiting:</small>
+                                    <div>
+                                        <span th:text="${disaster.type.displayName}"></span> - 
+                                        <span th:text="${disaster.location}"></span>
+                                        <span class="badge bg-secondary ms-2" 
+                                              th:text="${disaster.severity.displayName}"></span>
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i>
+                                    <span th:text="${#temporals.format(disaster.createdAt, 'HH:mm')}"></span>
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                <span th:if="${pendingDisasters.size() > 0}">
+                                    Next disaster will start when volunteers are available
+                                </span>
+                                <span th:if="${pendingDisasters.empty}">
+                                    All disasters are being processed
+                                </span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Real-time System Status -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-cpu"></i> Real-time Thread Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6>Multithreading Status:</h6>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         th:style="'width: ' + ${threadUtilization} + '%'"
+                                         th:text="${threadUtilization} + '% Thread Utilization'">
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i>
+                                        <span th:text="${activeThreads}">0</span> threads active out of 
+                                        <span th:text="${stats.totalVolunteers}">0</span> total volunteers
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>SCD Concepts Active:</h6>
+                                <ul class="list-unstyled">
+                                    <li th:if="${activeThreads > 0}">
+                                        <i class="bi bi-check-circle text-success"></i> Multithreading
+                                    </li>
+                                    <li th:if="${activeDisasters.size() > 0}">
+                                        <i class="bi bi-check-circle text-success"></i> Synchronization
+                                    </li>
+                                    <li th:if="${availableVolunteers.size() > 0}">
+                                        <i class="bi bi-check-circle text-success"></i> Polymorphism
+                                    </li>
+                                    <li th:if="${stats.totalVolunteers > 0}">
+                                        <i class="bi bi-check-circle text-success"></i> Inheritance
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-5 pt-3 text-center text-muted border-top">
+            <p>
+                <strong>Disaster Alert & Volunteer Response Simulator</strong><br>
+                Spring Boot 3.2.0 | Java 17 | MySQL | Thymeleaf | Bootstrap 5<br>
+                SCD Project - Software Construction & Development
+            </p>
+        </footer>
+    </div>
+    
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Real-time Update Script -->
+    <script>
+        // Update countdown timers
+        function updateTimers() {
+            document.querySelectorAll('.countdown-timer').forEach(timer => {
+                const endTime = timer.getAttribute('data-end-time');
+                if (endTime) {
+                    const end = new Date(endTime);
+                    const now = new Date();
+                    const diff = end - now;
+                    
+                    if (diff > 0) {
+                        const seconds = Math.floor(diff / 1000);
+                        const minutes = Math.floor(seconds / 60);
+                        const remainingSeconds = seconds % 60;
+                        timer.textContent = `${minutes}m ${remainingSeconds}s`;
+                    } else {
+                        timer.textContent = 'Completed';
+                        timer.classList.remove('countdown-timer');
+                        timer.classList.add('text-success');
+                    }
+                }
+            });
+        }
+        
+        // Update progress bars
+        function updateProgressBars() {
+            document.querySelectorAll('.progress-bar').forEach(bar => {
+                const assignmentId = bar.getAttribute('data-assignment-id');
+                if (assignmentId) {
+                    // Simulate progress update - in real app, get from server
+                    const currentWidth = parseInt(bar.style.width) || parseInt(bar.getAttribute('aria-valuenow')) || 0;
+                    if (currentWidth < 100) {
+                        const newWidth = Math.min(currentWidth + 5, 100);
+                        bar.style.width = newWidth + '%';
+                        bar.textContent = newWidth + '%';
+                        bar.setAttribute('aria-valuenow', newWidth);
+                    }
+                }
+            });
+        }
+        
+        // Auto-refresh data every 3 seconds
+        function refreshDashboard() {
+            // Update timers and progress bars
+            updateTimers();
+            updateProgressBars();
+            
+            // Update last update time
+            const now = new Date();
+            document.getElementById('lastUpdateTime').textContent = 
+                now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            
+            // Fetch updated data from server (simplified)
+            if (window.location.pathname === '/') {
+                // In a real app, you would fetch from an API endpoint
+                // For now, we'll just reload the page every 30 seconds
+                setTimeout(() => {
+                    window.location.reload();
+                }, 30000); // Reload every 30 seconds for fresh data
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTimers();
+            updateProgressBars();
+            
+            // Update every 3 seconds
+            setInterval(refreshDashboard, 3000);
+            
+            // Update last update time
+            const now = new Date();
+            document.getElementById('lastUpdateTime').textContent = 
+                now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        });
+    </script>
+</body>
+</html>

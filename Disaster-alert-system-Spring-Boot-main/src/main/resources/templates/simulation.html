@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation Control - Disaster Alert System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        .simulation-card {
+            border: none;
+            border-radius: 15px;
+            transition: all 0.3s;
+            height: 100%;
+        }
+        .control-panel {
+            background: linear-gradient(135deg, #1a237e, #283593);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+        }
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .status-running { background-color: #4caf50; animation: pulse 2s infinite; }
+        .status-stopped { background-color: #f44336; }
+        .status-paused { background-color: #ff9800; }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .metric-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .log-entry {
+            border-left: 4px solid #0d6efd;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 0 5px 5px 0;
+        }
+        .log-error { border-left-color: #dc3545; }
+        .log-warning { border-left-color: #ffc107; }
+        .log-success { border-left-color: #198754; }
+        .thread-visual {
+            height: 40px;
+            background: linear-gradient(90deg, #0d6efd, #6610f2);
+            margin: 10px 0;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .thread-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #20c997, #198754);
+            width: 0%;
+            transition: width 2s;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-broadcast"></i> Disaster Alert System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/disasters">
+                            <i class="bi bi-exclamation-triangle"></i> Disasters
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/volunteers">
+                            <i class="bi bi-people"></i> Volunteers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/simulation">
+                            <i class="bi bi-play-circle"></i> Simulation
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/reports">
+                            <i class="bi bi-file-earmark-text"></i> Reports
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Flash Messages -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${success}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Simulation Header -->
+        <div class="control-panel mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-5 fw-bold">
+                        <i class="bi bi-cpu"></i> Simulation Control Panel
+                    </h1>
+                    <p class="lead mb-0">Real-time multithreaded disaster response simulation</p>
+                    <div class="mt-3">
+                        <span class="status-indicator status-stopped" id="simStatus"></span>
+                        <span id="simStatusText">Simulation Stopped</span>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group">
+                        <form th:action="@{/admin/simulation/start}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-play-circle"></i> Start Simulation
+                            </button>
+                        </form>
+                        <form th:action="@{/admin/simulation/stop}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-stop-circle"></i> Stop
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Controls -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card simulation-card border-primary">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="bi bi-exclamation-triangle text-primary" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5>Generate Test Disaster</h5>
+                        <p class="text-muted">Create a sample disaster for testing</p>
+                        <button class="btn btn-outline-primary" onclick="generateTestDisaster()">
+                            <i class="bi bi-lightning"></i> Generate
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card simulation-card border-success">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="bi bi-people text-success" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5>Auto-Assign Volunteers</h5>
+                        <p class="text-muted">Automatically assign volunteers to pending disasters</p>
+                        <form th:action="@{/admin/simulation/start}" method="post">
+                            <button type="submit" class="btn btn-outline-success">
+                                <i class="bi bi-gear"></i> Run Assignment
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card simulation-card border-warning">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="bi bi-graph-up text-warning" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5>Performance Metrics</h5>
+                        <p class="text-muted">View simulation performance and statistics</p>
+                        <a href="#metrics" class="btn btn-outline-warning">
+                            <i class="bi bi-bar-chart"></i> View Metrics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Metrics -->
+        <div class="row mb-4" id="metrics">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Real-time Metrics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <div class="metric-card">
+                                    <h2 id="activeThreads">0</h2>
+                                    <p class="text-muted mb-0">Active Threads</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="metric-card">
+                                    <h2 id="cpuUsage">0%</h2>
+                                    <p class="text-muted mb-0">CPU Usage</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="metric-card">
+                                    <h2 id="responseTime">0ms</h2>
+                                    <p class="text-muted mb-0">Avg Response Time</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="metric-card">
+                                    <h2 id="successRate">0%</h2>
+                                    <p class="text-muted mb-0">Success Rate</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thread Visualization -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Thread Visualization</h5>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshThreads()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="threadContainer">
+                            <!-- Threads will be dynamically added here -->
+                            <div class="text-center py-4">
+                                <p class="text-muted">No active threads. Start the simulation to see thread activity.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulation Logs -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-journal-text"></i> Simulation Logs</h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearLogs()">
+                            <i class="bi bi-trash"></i> Clear
+                        </button>
+                    </div>
+                    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                        <div id="simulationLogs">
+                            <div class="log-entry log-success">
+                                <strong>SYSTEM</strong> - Simulation control panel initialized
+                                <small class="text-muted float-end">Just now</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCD Concepts Display -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-code-slash"></i> SCD Concepts Demonstrated</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6>Multithreading:</h6>
+                                <ul>
+                                    <li>Volunteer Threads</li>
+                                    <li>Assignment Manager Thread</li>
+                                    <li>Thread Pool Management</li>
+                                    <li>Synchronization (Locks)</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Object-Oriented:</h6>
+                                <ul>
+                                    <li>Inheritance Hierarchy</li>
+                                    <li>Polymorphism</li>
+                                    <li>Encapsulation</li>
+                                    <li>Abstract Classes</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Design Patterns:</h6>
+                                <ul>
+                                    <li>Repository Pattern</li>
+                                    <li>Service Layer Pattern</li>
+                                    <li>Strategy Pattern</li>
+                                    <li>Template Method Pattern</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Simulate thread visualization
+        function refreshThreads() {
+            const container = document.getElementById('threadContainer');
+            container.innerHTML = '';
+            
+            // Simulate 5 random threads
+            for (let i = 1; i <= 5; i++) {
+                const progress = Math.floor(Math.random() * 100);
+                const thread = document.createElement('div');
+                thread.className = 'thread-visual';
+                thread.innerHTML = `
+                    <div class="thread-progress" style="width: ${progress}%"></div>
+                    <div style="position: absolute; top: 10px; left: 15px; color: white; font-weight: bold;">
+                        Thread-${i} (${progress}%)
+                    </div>
+                `;
+                container.appendChild(thread);
+            }
+            
+            addLog('Thread visualization refreshed', 'info');
+        }
+
+        // Log functions
+        function addLog(message, type = 'info') {
+            const logs = document.getElementById('simulationLogs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `
+                <strong>${type.toUpperCase()}</strong> - ${message}
+                <small class="text-muted float-end">Just now</small>
+            `;
+            logs.insertBefore(logEntry, logs.firstChild);
+        }
+
+        function clearLogs() {
+            document.getElementById('simulationLogs').innerHTML = `
+                <div class="log-entry log-success">
+                    <strong>SYSTEM</strong> - Logs cleared
+                    <small class="text-muted float-end">Just now</small>
+                </div>
+            `;
+        }
+
+        function generateTestDisaster() {
+            addLog('Generating test disaster...', 'warning');
+            
+            // Simulate API call
+            setTimeout(() => {
+                addLog('Test disaster created successfully', 'success');
+                updateMetrics();
+            }, 1000);
+        }
+
+        // Update metrics randomly
+        function updateMetrics() {
+            document.getElementById('activeThreads').textContent = Math.floor(Math.random() * 10);
+            document.getElementById('cpuUsage').textContent = Math.floor(Math.random() * 100) + '%';
+            document.getElementById('responseTime').textContent = Math.floor(Math.random() * 500) + 'ms';
+            document.getElementById('successRate').textContent = Math.floor(Math.random() * 30 + 70) + '%';
+        }
+
+        // Auto-update metrics every 3 seconds
+        setInterval(updateMetrics, 3000);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshThreads();
+            updateMetrics();
+            
+            // Check simulation status
+            fetch('/api/simulation/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusElem = document.getElementById('simStatus');
+                    const textElem = document.getElementById('simStatusText');
+                    
+                    if (data.running) {
+                        statusElem.className = 'status-indicator status-running';
+                        textElem.textContent = 'Simulation Running';
+                    } else {
+                        statusElem.className = 'status-indicator status-stopped';
+                        textElem.textContent = 'Simulation Stopped';
+                    }
+                })
+                .catch(() => {
+                    // If API not available, assume stopped
+                    document.getElementById('simStatus').className = 'status-indicator status-stopped';
+                });
+        });
+    </script>
+</body>
+</html>

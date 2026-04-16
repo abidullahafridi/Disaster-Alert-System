@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Disaster - Disaster Alert System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            padding-top: 20px;
+        }
+        
+        .form-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 40px;
+            margin-top: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 20px;
+        }
+        
+        .form-header h2 {
+            color: #0d6efd;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .form-header p {
+            color: #6c757d;
+            margin-bottom: 0;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .form-section h5 {
+            color: #495057;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+        
+        .form-control, .form-select {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px 15px;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .severity-option {
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+        
+        .severity-option:hover {
+            border-color: #0d6efd;
+            transform: translateY(-2px);
+        }
+        
+        .severity-option.selected {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+        }
+        
+        .severity-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+        
+        .severity-low { color: #198754; }
+        .severity-medium { color: #ffc107; }
+        .severity-high { color: #fd7e14; }
+        .severity-critical { color: #dc3545; }
+        
+        .disaster-type-card {
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+        
+        .disaster-type-card:hover {
+            border-color: #0d6efd;
+            transform: translateY(-2px);
+        }
+        
+        .disaster-type-card.selected {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+        }
+        
+        .disaster-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+        }
+        
+        .back-btn {
+            background: #6c757d;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: #5a6268;
+        }
+        
+        .info-box {
+            background: #e7f1ff;
+            border-left: 4px solid #0d6efd;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 20px;
+        }
+        
+        .info-box i {
+            color: #0d6efd;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-broadcast"></i> Disaster Alert System
+            </a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/disasters">
+                            <i class="bi bi-exclamation-triangle"></i> Disasters
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/volunteer/create">
+                            <i class="bi bi-person-plus"></i> Add Volunteer
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Flash Messages -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show mt-4" role="alert">
+            <i class="bi bi-check-circle"></i> <span th:text="${success}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Form Container -->
+        <div class="form-container">
+            <!-- Header -->
+            <div class="form-header">
+                <h2><i class="bi bi-exclamation-triangle"></i> Report New Disaster</h2>
+                <p>Fill in the details below to create a new disaster simulation</p>
+            </div>
+            
+            <!-- Information Box -->
+            <div class="info-box">
+                <i class="bi bi-info-circle"></i>
+                <strong>Simulation Information:</strong> Based on the disaster type and severity, 
+                the system will automatically assign volunteers using multithreading.
+            </div>
+
+            <form th:action="@{/admin/disaster/create}" th:object="${disaster}" method="post">
+                
+                <!-- Section 1: Disaster Type -->
+                <div class="form-section">
+                    <h5><i class="bi bi-tornado"></i> Disaster Type</h5>
+                    
+                    <div class="row" id="disasterTypeOptions">
+                        <div class="col-md-4 mb-3">
+                            <div class="disaster-type-card" data-type="FLOOD" onclick="selectDisasterType('FLOOD')">
+                                <div class="text-center">
+                                    <i class="bi bi-droplet disaster-icon text-primary"></i>
+                                    <h6>Flood</h6>
+                                    <p class="small text-muted mb-0">Water overflow, flooding areas</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="disaster-type-card" data-type="EARTHQUAKE" onclick="selectDisasterType('EARTHQUAKE')">
+                                <div class="text-center">
+                                    <i class="bi bi-geo disaster-icon text-warning"></i>
+                                    <h6>Earthquake</h6>
+                                    <p class="small text-muted mb-0">Ground shaking, structural damage</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="disaster-type-card" data-type="FIRE" onclick="selectDisasterType('FIRE')">
+                                <div class="text-center">
+                                    <i class="bi bi-fire disaster-icon text-danger"></i>
+                                    <h6>Fire</h6>
+                                    <p class="small text-muted mb-0">Fire outbreaks, smoke damage</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="disaster-type-card" data-type="HURRICANE" onclick="selectDisasterType('HURRICANE')">
+                                <div class="text-center">
+                                    <i class="bi bi-wind disaster-icon text-info"></i>
+                                    <h6>Hurricane</h6>
+                                    <p class="small text-muted mb-0">Strong winds, heavy rainfall</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="disaster-type-card" data-type="TSUNAMI" onclick="selectDisasterType('TSUNAMI')">
+                                <div class="text-center">
+                                    <i class="bi bi-water disaster-icon" style="color: #0dcaf0;"></i>
+                                    <h6>Tsunami</h6>
+                                    <p class="small text-muted mb-0">Ocean waves, coastal damage</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" th:field="*{type}" id="selectedDisasterType" required>
+                </div>
+
+                <!-- Section 2: Basic Information -->
+                <div class="form-section">
+                    <h5><i class="bi bi-info-circle"></i> Basic Information</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Location *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-geo-alt"></i>
+                                </span>
+                                <input type="text" class="form-control" th:field="*{location}" 
+                                       required placeholder="Enter disaster location">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estimated Casualties</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-people"></i>
+                                </span>
+                                <input type="number" class="form-control" th:field="*{estimatedCasualties}" 
+                                       min="0" max="10000" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-text-paragraph"></i>
+                            </span>
+                            <textarea class="form-control" th:field="*{description}" 
+                                      rows="3" placeholder="Describe the disaster situation..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Severity Level -->
+                <div class="form-section">
+                    <h5><i class="bi bi-speedometer2"></i> Severity Level *</h5>
+                    
+                    <div class="row" id="severityOptions">
+                        <div class="col-md-3 mb-3">
+                            <div class="severity-option" data-severity="LOW" onclick="selectSeverity('LOW')">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-circle severity-icon severity-low"></i>
+                                    <div>
+                                        <h6 class="mb-0">Low</h6>
+                                        <small class="text-muted">Minor impact</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="severity-option" data-severity="MEDIUM" onclick="selectSeverity('MEDIUM')">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-exclamation-circle severity-icon severity-medium"></i>
+                                    <div>
+                                        <h6 class="mb-0">Medium</h6>
+                                        <small class="text-muted">Moderate impact</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="severity-option" data-severity="HIGH" onclick="selectSeverity('HIGH')">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-exclamation-triangle severity-icon severity-high"></i>
+                                    <div>
+                                        <h6 class="mb-0">High</h6>
+                                        <small class="text-muted">Severe impact</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="severity-option" data-severity="CRITICAL" onclick="selectSeverity('CRITICAL')">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-exclamation-octagon severity-icon severity-critical"></i>
+                                    <div>
+                                        <h6 class="mb-0">Critical</h6>
+                                        <small class="text-muted">Extreme impact</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <small>
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>Volunteer Requirements:</strong>
+                                    Higher severity disasters require more volunteers and will trigger 
+                                    more multithreading in the simulation.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" th:field="*{severity}" id="selectedSeverity" required>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="row mt-4">
+                    <div class="col-md-6 mb-3">
+                        <a href="/disasters" class="btn btn-outline-secondary back-btn w-100">
+                            <i class="bi bi-arrow-left"></i> Back to Disasters
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <button type="submit" class="btn btn-primary submit-btn">
+                            <i class="bi bi-plus-circle"></i> Create Disaster Simulation
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Select Disaster Type
+        function selectDisasterType(type) {
+            // Update visual selection
+            document.querySelectorAll('.disaster-type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            // Update hidden field value
+            document.getElementById('selectedDisasterType').value = type;
+            
+            console.log('Selected disaster type:', type);
+        }
+
+        // Select Severity
+        function selectSeverity(severity) {
+            // Update visual selection
+            document.querySelectorAll('.severity-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            // Update hidden field value
+            document.getElementById('selectedSeverity').value = severity;
+            
+            console.log('Selected severity:', severity);
+        }
+
+        // Initialize with default selections
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select first disaster type by default
+            const firstDisasterOption = document.querySelector('.disaster-type-card[data-type="FLOOD"]');
+            if (firstDisasterOption) {
+                firstDisasterOption.classList.add('selected');
+                document.getElementById('selectedDisasterType').value = 'FLOOD';
+            }
+            
+            // Select medium severity by default
+            const mediumSeverityOption = document.querySelector('.severity-option[data-severity="MEDIUM"]');
+            if (mediumSeverityOption) {
+                mediumSeverityOption.classList.add('selected');
+                document.getElementById('selectedSeverity').value = 'MEDIUM';
+            }
+        });
+    </script>
+</body>
+</html>

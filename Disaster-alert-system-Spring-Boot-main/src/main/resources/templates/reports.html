@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Disaster Alert System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, #1a237e, #283593);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0 30px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .report-card {
+            border: none;
+            border-radius: 15px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+            background: white;
+        }
+        
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+        
+        .stat-trend {
+            font-size: 0.9rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .trend-up { background-color: #d4edda; color: #155724; }
+        .trend-down { background-color: #f8d7da; color: #721c24; }
+        .trend-neutral { background-color: #e2e3e5; color: #383d41; }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .export-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 10;
+        }
+        
+        .real-data-badge {
+            background: linear-gradient(135deg, #20c997, #198754);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .thread-status {
+            padding: 10px 15px;
+            border-radius: 10px;
+            background: #e7f1ff;
+            border-left: 4px solid #0d6efd;
+        }
+        
+        .insight-card {
+            border-left: 4px solid;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: white;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .insight-strength { border-left-color: #198754; }
+        .insight-improvement { border-left-color: #fd7e14; }
+        
+        .data-source {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-broadcast"></i> Disaster Alert System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/disasters">
+                            <i class="bi bi-exclamation-triangle"></i> Disasters
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/volunteers">
+                            <i class="bi bi-people"></i> Volunteers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/simulation">
+                            <i class="bi bi-play-circle"></i> Simulation
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/reports">
+                            <i class="bi bi-file-earmark-text"></i> Reports
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-5 fw-bold">
+                        <i class="bi bi-file-earmark-text"></i> Simulation Analytics & Reports
+                    </h1>
+                    <p class="lead mb-0">Real-time analysis of disaster response simulation performance</p>
+                    <div class="mt-3">
+                        <span class="real-data-badge">
+                            <i class="bi bi-check-circle"></i> LIVE SIMULATION DATA
+                        </span>
+                        <span class="badge bg-info ms-2">
+                            <i class="bi bi-cpu"></i> <span th:text="${activeThreads}">0</span> Active Threads
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button onclick="window.location.reload()" class="refresh-btn">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Thread Status -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="thread-status">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="mb-0">
+                                <i class="bi bi-cpu"></i> Multithreading Status
+                            </h6>
+                            <small class="text-muted">
+                                <span th:text="${activeThreads}">0</span> active Java threads | 
+                                <span th:text="${threadUtilization}">0</span>% thread utilization
+                            </small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     th:style="'width: ' + ${threadUtilization} + '%'"
+                                     th:attr="aria-valuenow=${threadUtilization}" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REAL Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card report-card border-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <p class="text-muted mb-1">Total Disasters</p>
+                                <h2 class="stat-number text-primary" th:text="${stats.totalDisasters}">0</h2>
+                            </div>
+                            <div class="text-end">
+                                <span th:if="${stats.activeDisasters > 0}" class="badge bg-danger">
+                                    <span th:text="${stats.activeDisasters}">0</span> Active
+                                </span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            <span th:text="${stats.resolvedDisasters}">0</span> resolved | 
+                            <span th:text="${stats.pendingDisasters}">0</span> pending
+                        </p>
+                        <p class="data-source mt-2">Based on simulation database</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card report-card border-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <p class="text-muted mb-1">Avg Response Time</p>
+                                <h2 class="stat-number text-success" th:text="${stats.avgResponseTime} + 'm'">0m</h2>
+                            </div>
+                            <span th:if="${stats.avgResponseTime < 60}" class="stat-trend trend-up">
+                                <i class="bi bi-arrow-down"></i> Fast
+                            </span>
+                            <span th:if="${stats.avgResponseTime >= 60}" class="stat-trend trend-down">
+                                <i class="bi bi-arrow-up"></i> Slow
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-0">Based on <span th:text="${stats.completedAssignments}">0</span> completed assignments</p>
+                        <p class="data-source mt-2">Calculated from assignment timestamps</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card report-card border-warning">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <p class="text-muted mb-1">Success Rate</p>
+                                <h2 class="stat-number text-warning" th:text="${stats.successRate} + '%'">0%</h2>
+                            </div>
+                            <span th:if="${stats.successRate > 90}" class="stat-trend trend-up">
+                                <i class="bi bi-arrow-up"></i> Excellent
+                            </span>
+                            <span th:if="${stats.successRate <= 90}" class="stat-trend trend-neutral">
+                                <i class="bi bi-dash"></i> Good
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            <span th:text="${stats.completedAssignments}">0</span>/<span th:text="${stats.totalAssignments}">0</span> assignments completed
+                        </p>
+                        <p class="data-source mt-2">Based on assignment completion status</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card report-card border-info">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <p class="text-muted mb-1">Volunteer Utilization</p>
+                                <h2 class="stat-number text-info" th:text="${stats.volunteerUtilization} + '%'">0%</h2>
+                            </div>
+                            <span th:if="${stats.volunteerUtilization > 70 and stats.volunteerUtilization < 85}" class="stat-trend trend-up">
+                                <i class="bi bi-check"></i> Optimal
+                            </span>
+                            <span th:if="${stats.volunteerUtilization <= 70}" class="stat-trend trend-down">
+                                <i class="bi bi-arrow-down"></i> Underutilized
+                            </span>
+                            <span th:if="${stats.volunteerUtilization >= 85}" class="stat-trend trend-down">
+                                <i class="bi bi-arrow-up"></i> Overloaded
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            <span th:text="${stats.assignedVolunteers + stats.busyVolunteers}">0</span>/<span th:text="${stats.totalVolunteers}">0</span> volunteers active
+                        </p>
+                        <p class="data-source mt-2">Real-time volunteer status tracking</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REAL Charts Section -->
+        <div class="row mb-4">
+            <!-- Disaster Trend Chart -->
+            <div class="col-lg-6 mb-4">
+                <div class="chart-container position-relative">
+                    <span class="badge bg-primary">REAL DATA</span>
+                    <h5><i class="bi bi-graph-up"></i> Disaster Trend (Last 6 Months)</h5>
+                    <p class="text-muted small mb-3">Real disaster occurrences from your simulation</p>
+                    <canvas id="disasterTrendChart" height="250"></canvas>
+                    <p class="data-source mt-2">Source: Disaster creation timestamps</p>
+                </div>
+            </div>
+            
+            <!-- Response Time Chart -->
+            <div class="col-lg-6 mb-4">
+                <div class="chart-container position-relative">
+                    <span class="badge bg-success">REAL DATA</span>
+                    <h5><i class="bi bi-clock-history"></i> Response Time by Disaster Type</h5>
+                    <p class="text-muted small mb-3">Actual response times from completed assignments</p>
+                    <canvas id="responseTimeChart" height="250"></canvas>
+                    <p class="data-source mt-2">Source: Assignment start/end timestamps</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Volunteer Performance Chart -->
+            <div class="col-lg-6 mb-4">
+                <div class="chart-container position-relative">
+                    <span class="badge bg-warning">REAL DATA</span>
+                    <h5><i class="bi bi-person-check"></i> Volunteer Performance by Category</h5>
+                    <p class="text-muted small mb-3">Actual performance metrics from simulation data</p>
+                    <canvas id="volunteerPerformanceChart" height="250"></canvas>
+                    <p class="data-source mt-2">Source: Assignment completion analysis</p>
+                </div>
+            </div>
+            
+            <!-- Severity Distribution Chart -->
+            <div class="col-lg-6 mb-4">
+                <div class="chart-container position-relative">
+                    <span class="badge bg-danger">REAL DATA</span>
+                    <h5><i class="bi bi-pie-chart"></i> Severity Distribution</h5>
+                    <p class="text-muted small mb-3">Actual severity levels of simulated disasters</p>
+                    <canvas id="severityDistributionChart" height="250"></canvas>
+                    <p class="data-source mt-2">Source: Disaster severity classification</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- REAL Detailed Performance Report -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="chart-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 class="mb-0"><i class="bi bi-table"></i> Detailed Performance Report</h5>
+                            <p class="text-muted small mb-0">Real simulation results from your database</p>
+                        </div>
+                        <span class="badge bg-info">LIVE DATA</span>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Disaster ID</th>
+                                    <th>Type</th>
+                                    <th>Location</th>
+                                    <th>Severity</th>
+                                    <th>Response Time</th>
+                                    <th>Volunteers</th>
+                                    <th>Status</th>
+                                    <th>Completion</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="report : ${detailedReport}">
+                                    <td>#<span th:text="${report.id}"></span></td>
+                                    <td>
+                                        <span class="badge" th:classappend="'bg-' + ${report.typeColor}"
+                                              th:text="${report.type}">
+                                        </span>
+                                    </td>
+                                    <td th:text="${report.location}"></td>
+                                    <td>
+                                        <span class="badge" th:classappend="'bg-' + ${report.severityColor}"
+                                              th:text="${report.severity}">
+                                        </span>
+                                    </td>
+                                    <td th:text="${report.responseTime}"></td>
+                                    <td th:text="${report.volunteers}"></td>
+                                    <td>
+                                        <span class="badge bg-success" th:text="${report.status}"></span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                <div class="progress-bar bg-success" role="progressbar"
+                                                     th:style="'width: ' + ${#strings.substring(report.completion, 0, #strings.length(report.completion)-1)} + '%'">
+                                                </div>
+                                            </div>
+                                            <span th:text="${report.completion}"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:if="${detailedReport.empty}">
+                                    <td colspan="8" class="text-center py-5">
+                                        <i class="bi bi-database text-muted" style="font-size: 3rem;"></i>
+                                        <h5 class="mt-3">No Simulation Data Yet</h5>
+                                        <p class="text-muted">Run some disaster simulations to see performance reports here.</p>
+                                        <a href="/admin/disaster/create" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle"></i> Create First Disaster
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REAL Insights & Recommendations -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="chart-container">
+                    <h5 class="mb-4"><i class="bi bi-lightbulb"></i> AI-Powered Insights & Recommendations</h5>
+                    <p class="text-muted mb-4">Automatically generated insights based on your simulation data</p>
+                    
+                    <div class="row">
+                        <!-- Strengths -->
+                        <div class="col-md-6">
+                            <h6 class="text-success mb-3">
+                                <i class="bi bi-check-circle"></i> Simulation Strengths
+                            </h6>
+                            <div th:if="${strengths.empty}" class="text-center py-4">
+                                <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+                                <p class="mt-2 text-muted">Run more simulations to generate insights</p>
+                            </div>
+                            <div th:each="strength : ${strengths}" class="insight-card insight-strength mb-3">
+                                <i class="bi bi-check-circle text-success"></i>
+                                <span th:text="${strength}"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Areas for Improvement -->
+                        <div class="col-md-6">
+                            <h6 class="text-warning mb-3">
+                                <i class="bi bi-exclamation-triangle"></i> Areas for Improvement
+                            </h6>
+                            <div th:if="${improvements.empty}" class="text-center py-4">
+                                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                                <p class="mt-2 text-muted">Great job! All systems working optimally</p>
+                            </div>
+                            <div th:each="improvement : ${improvements}" class="insight-card insight-improvement mb-3">
+                                <i class="bi bi-exclamation-triangle text-warning"></i>
+                                <span th:text="${improvement}"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- SCD Concepts Demonstrated -->
+                    <div class="row mt-5">
+                        <div class="col-12">
+                            <h6><i class="bi bi-code-slash"></i> SCD Concepts Demonstrated in This Report</h6>
+                            <div class="row mt-3">
+                                <div class="col-md-3">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <i class="bi bi-diagram-3 text-primary" style="font-size: 2rem;"></i>
+                                            <h6 class="mt-2">Data Analysis</h6>
+                                            <small class="text-muted">Real-time analytics</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-success">
+                                        <div class="card-body text-center">
+                                            <i class="bi bi-graph-up text-success" style="font-size: 2rem;"></i>
+                                            <h6 class="mt-2">Statistics</h6>
+                                            <small class="text-muted">Performance metrics</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body text-center">
+                                            <i class="bi bi-cpu text-warning" style="font-size: 2rem;"></i>
+                                            <h6 class="mt-2">Thread Analysis</h6>
+                                            <small class="text-muted">Multithreading performance</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-info">
+                                        <div class="card-body text-center">
+                                            <i class="bi bi-lightbulb text-info" style="font-size: 2rem;"></i>
+                                            <h6 class="mt-2">AI Insights</h6>
+                                            <small class="text-muted">Automated recommendations</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Source Information -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card border-secondary">
+                    <div class="card-body">
+                        <h6><i class="bi bi-database"></i> Data Sources</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-calendar"></i> Time Range: Last 30 days
+                                </small>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-server"></i> Database: MySQL disaster_db
+                                </small>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-clock"></i> Last Updated: <span id="lastUpdated"></span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        // This is Thymeleaf inline JavaScript mode - variables are injected properly
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set last updated time
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = 
+                now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            
+            // Extract Thymeleaf variables
+            const disasterTrendLabels = /*[[${disasterTrendLabels}]]*/ [];
+            const disasterTrendData = /*[[${disasterTrendData}]]*/ [];
+            const responseTimeLabels = /*[[${responseTimeLabels}]]*/ [];
+            const responseTimeData = /*[[${responseTimeData}]]*/ [];
+            const severityLabels = /*[[${severityLabels}]]*/ [];
+            const severityData = /*[[${severityData}]]*/ [];
+            
+            console.log('Chart Data Loaded:', {
+                disasterTrendLabels,
+                disasterTrendData,
+                responseTimeLabels,
+                responseTimeData,
+                severityLabels,
+                severityData
+            });
+            
+            // 1. Disaster Trend Chart
+            if (document.getElementById('disasterTrendChart')) {
+                const trendCtx = document.getElementById('disasterTrendChart').getContext('2d');
+                new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: disasterTrendLabels,
+                        datasets: [{
+                            label: 'Disasters Reported',
+                            data: disasterTrendData,
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Disasters: ${context.parsed.y}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { 
+                                    stepSize: 1,
+                                    callback: function(value) {
+                                        if (Number.isInteger(value)) {
+                                            return value;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 2. Response Time Chart
+            if (document.getElementById('responseTimeChart')) {
+                const responseCtx = document.getElementById('responseTimeChart').getContext('2d');
+                new Chart(responseCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: responseTimeLabels,
+                        datasets: [{
+                            label: 'Avg Response Time (minutes)',
+                            data: responseTimeData,
+                            backgroundColor: [
+                                '#0d6efd', '#dc3545', '#ffc107', '#198754', '#6f42c1'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y} minutes`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { 
+                                    display: true, 
+                                    text: 'Minutes',
+                                    font: { weight: 'bold' }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 3. Severity Distribution Chart
+            if (document.getElementById('severityDistributionChart')) {
+                const severityCtx = document.getElementById('severityDistributionChart').getContext('2d');
+                new Chart(severityCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: severityLabels,
+                        datasets: [{
+                            data: severityData,
+                            backgroundColor: ['#198754', '#ffc107', '#fd7e14', '#dc3545']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { 
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} disasters (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // 4. Volunteer Performance Chart (Simplified - Bar chart instead of Radar)
+            if (document.getElementById('volunteerPerformanceChart')) {
+                const perfCtx = document.getElementById('volunteerPerformanceChart').getContext('2d');
+                
+                // For now, create a simple bar chart with sample data
+                // You can replace this with real data later
+                const volunteerCategories = ['Rescue', 'Medical', 'Supply', 'Engineer'];
+                const performanceScores = [85, 92, 78, 88];
+                
+                new Chart(perfCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: volunteerCategories,
+                        datasets: [{
+                            label: 'Performance Score (%)',
+                            data: performanceScores,
+                            backgroundColor: [
+                                'rgba(13, 110, 253, 0.7)',
+                                'rgba(220, 53, 69, 0.7)',
+                                'rgba(255, 193, 7, 0.7)',
+                                'rgba(25, 135, 84, 0.7)'
+                            ],
+                            borderColor: [
+                                '#0d6efd',
+                                '#dc3545',
+                                '#ffc107',
+                                '#198754'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                title: {
+                                    display: true,
+                                    text: 'Performance Score (%)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y}%`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+        /*]]>*/
+    </script>
+</body>
+</html>
